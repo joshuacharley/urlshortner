@@ -9,6 +9,10 @@ const nextConfig = {
         source: "/:shortCode",
         destination: "/api/redirect/:shortCode",
       },
+      {
+        source: "/expired/:shortCode",
+        destination: "/expired/:shortCode",
+      },
     ];
   },
 };

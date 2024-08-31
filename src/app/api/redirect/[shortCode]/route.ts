@@ -11,14 +11,18 @@ export async function GET(
   try {
     await connectToDatabase();
     const urlDoc = await Url.findOne({
-      $and: [
-        { $or: [{ shortCode }, { customBackHalf: shortCode }] },
-        { $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }] },
-      ],
+      $or: [{ shortCode }, { customBackHalf: shortCode }],
     });
 
     if (!urlDoc) {
       return NextResponse.redirect(new URL("/", request.url));
+    }
+
+    // Check if the link has expired
+    if (urlDoc.expiresAt && new Date() > new Date(urlDoc.expiresAt)) {
+      return NextResponse.redirect(
+        new URL(`/expired/${shortCode}`, request.url)
+      );
     }
 
     // Update click data

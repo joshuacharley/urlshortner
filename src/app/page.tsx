@@ -1,32 +1,42 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 
 export default function Home() {
   const [url, setUrl] = useState("");
+  const [customBackHalf, setCustomBackHalf] = useState("");
   const [shortUrl, setShortUrl] = useState("");
+  const [qrCode, setQrCode] = useState("");
   const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setShortUrl("");
+    setQrCode("");
 
     try {
       const response = await fetch("/api/shorten", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url, customBackHalf }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to shorten URL");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to shorten URL");
       }
 
       const data = await response.json();
       setShortUrl(data.shortUrl);
+      setQrCode(data.qrCode);
     } catch (err) {
-      setError("An error occurred while shortening the URL");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "An error occurred while shortening the URL"
+      );
     }
   };
 
@@ -40,11 +50,18 @@ export default function Home() {
           onChange={(e) => setUrl(e.target.value)}
           placeholder="Enter URL to shorten"
           required
-          className="w-full p-2 border rounded bg-inherit"
+          className="w-full p-2 border rounded mb-2 bg-inherit"
+        />
+        <input
+          type="text"
+          value={customBackHalf}
+          onChange={(e) => setCustomBackHalf(e.target.value)}
+          placeholder="Custom back-half (optional)"
+          className="w-full p-2 border rounded mb-2 bg-inherit"
         />
         <button
           type="submit"
-          className="mt-2 px-4 py-2 bg-blue-500 text-white rounded"
+          className="px-4 py-2 bg-blue-500 text-white rounded"
         >
           Shorten URL
         </button>
@@ -60,6 +77,12 @@ export default function Home() {
           >
             {shortUrl}
           </a>
+          {qrCode && (
+            <div className="mt-4">
+              <p>QR Code:</p>
+              <Image src={qrCode} alt="QR Code" width={200} height={200} />
+            </div>
+          )}
         </div>
       )}
       {error && <p className="text-red-500 mt-4">{error}</p>}

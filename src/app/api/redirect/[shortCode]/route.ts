@@ -10,17 +10,39 @@ export async function GET(
 
   try {
     await connectToDatabase();
-    const urlDoc = await Url.findOneAndUpdate(
-      { $or: [{ shortCode }, { customBackHalf: shortCode }] },
-      { $inc: { clicks: 1 } },
-      { new: true }
-    );
+    const urlDoc = await Url.findOne({
+      $and: [
+        { $or: [{ shortCode }, { customBackHalf: shortCode }] },
+        { $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }] },
+      ],
+    });
 
-    if (urlDoc) {
-      return NextResponse.redirect(urlDoc.originalUrl);
-    } else {
+    if (!urlDoc) {
       return NextResponse.redirect(new URL("/", request.url));
     }
+
+    // Update click data
+    const clickData = {
+      timestamp: new Date(),
+      ipAddress: request.headers.get("x-forwarded-for") || "unknown",
+      userAgent: request.headers.get("user-agent") || "unknown",
+    };
+
+    await Url.findByIdAndUpdate(urlDoc._id, {
+      $inc: { clicks: 1 },
+      $push: { clickData: clickData },
+    });
+
+    // Ensure the URL starts with http:// or https://
+    let redirectUrl = urlDoc.originalUrl;
+    if (
+      !redirectUrl.startsWith("http://") &&
+      !redirectUrl.startsWith("https://")
+    ) {
+      redirectUrl = "http://" + redirectUrl;
+    }
+
+    return NextResponse.redirect(redirectUrl);
   } catch (error) {
     console.error("Error redirecting:", error);
     return NextResponse.redirect(new URL("/", request.url));

@@ -1,10 +1,18 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]";
 import connectToDatabase from "@/lib/mongodb";
 import Url from "@/models/Url";
 import { nanoid } from "nanoid";
 import QRCode from "qrcode";
 
 export async function POST(req: Request) {
+  const session = await getServerSession(authOptions);
+
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     await connectToDatabase();
     const { url, customBackHalf, expiresIn } = await req.json();
@@ -16,7 +24,7 @@ export async function POST(req: Request) {
       );
     }
 
-    let shortCode = nanoid(8);
+    let shortCode = customBackHalf || nanoid(8);
 
     if (customBackHalf) {
       const existingUrl = await Url.findOne({ customBackHalf });
@@ -29,7 +37,6 @@ export async function POST(req: Request) {
           { status: 400 }
         );
       }
-      shortCode = customBackHalf;
     }
 
     let expiresAt = null;
@@ -52,6 +59,7 @@ export async function POST(req: Request) {
       shortCode,
       customBackHalf: customBackHalf || null,
       expiresAt,
+      userId: session.user.id,
     });
     await newUrl.save();
 

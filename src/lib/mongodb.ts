@@ -1,5 +1,5 @@
-// src/lib/mongodb.ts
 import mongoose, { Connection, ConnectOptions } from "mongoose";
+import { MongoClient } from "mongodb";
 
 // Configuration
 const MONGODB_URI =
@@ -84,4 +84,23 @@ async function connectToDatabase(): Promise<Connection> {
   }
 }
 
+// MongoClient for NextAuth
+let client: MongoClient;
+let clientPromise: Promise<MongoClient>;
+
+if (process.env.NODE_ENV === "development") {
+  // In development mode, use a global variable so that the value
+  // is preserved across module reloads caused by HMR (Hot Module Replacement).
+  if (!(global as any)._mongoClientPromise) {
+    client = new MongoClient(MONGODB_URI);
+    (global as any)._mongoClientPromise = client.connect();
+  }
+  clientPromise = (global as any)._mongoClientPromise;
+} else {
+  // In production mode, it's best to not use a global variable.
+  client = new MongoClient(MONGODB_URI);
+  clientPromise = client.connect();
+}
+
+export { clientPromise };
 export default connectToDatabase;

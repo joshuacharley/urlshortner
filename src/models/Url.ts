@@ -19,6 +19,10 @@ const urlSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  userId: {
+    type: String,
+    required: true,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

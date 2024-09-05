@@ -52,6 +52,7 @@ async function connectToDatabase(): Promise<Connection> {
 
     const opts: ConnectOptions = {
       maxPoolSize: DB_MAX_POOL_SIZE,
+      bufferCommands: false,
     };
 
     cached.promise = mongoose

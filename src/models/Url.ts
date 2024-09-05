@@ -19,10 +19,6 @@ const urlSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
-  userId: {
-    type: String,
-    required: true,
-  },
   createdAt: {
     type: Date,
     default: Date.now,
@@ -31,13 +27,9 @@ const urlSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
-  clickData: [
-    {
-      timestamp: Date,
-      ipAddress: String,
-      userAgent: String,
-    },
-  ],
 });
+
+urlSchema.index({ shortCode: 1 }, { unique: true });
+urlSchema.index({ customBackHalf: 1 }, { unique: true, sparse: true });
 
 export default mongoose.models.Url || mongoose.model("Url", urlSchema);

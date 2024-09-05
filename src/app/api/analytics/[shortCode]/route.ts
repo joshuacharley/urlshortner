@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import Url from "@/models/Url";
+import QRCode from "qrcode";
 
 export async function GET(
   request: Request,
@@ -10,19 +11,25 @@ export async function GET(
 
   try {
     await connectToDatabase();
-    const urlDoc = await Url.findOne({
-      $or: [{ shortCode }, { customBackHalf: shortCode }],
-    });
+    const url = await Url.findOne({ shortCode });
 
-    if (!urlDoc) {
+    if (!url) {
       return NextResponse.json({ error: "URL not found" }, { status: 404 });
     }
 
+    const qrCode = await QRCode.toDataURL(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/${shortCode}`
+    );
+
     const analytics = {
-      totalClicks: urlDoc.clicks,
-      clickData: urlDoc.clickData,
-      createdAt: urlDoc.createdAt,
-      expiresAt: urlDoc.expiresAt,
+      originalUrl: url.originalUrl,
+      shortCode: url.shortCode,
+      customBackHalf: url.customBackHalf,
+      totalClicks: url.clicks,
+      createdAt: url.createdAt,
+      expiresAt: url.expiresAt,
+      clickData: url.clickData || [],
+      qrCode,
     };
 
     return NextResponse.json(analytics);

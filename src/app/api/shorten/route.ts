@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import connectToDatabase from "@/lib/mongodb";
 import Url from "@/models/Url";
 import { nanoid } from "nanoid";
 import QRCode from "qrcode";
 
 export async function POST(req: Request) {
+  const { userId } = auth();
+
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     await connectToDatabase();
     const { url, customBackHalf, expiresIn } = await req.json();
@@ -52,8 +59,9 @@ export async function POST(req: Request) {
     const newUrl = new Url({
       originalUrl: url,
       shortCode,
-      ...(customBackHalf && { customBackHalf }),
+      customBackHalf: customBackHalf || null,
       expiresAt,
+      userId, // Add the userId here
     });
     await newUrl.save();
 

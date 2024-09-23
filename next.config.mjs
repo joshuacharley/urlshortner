@@ -1,7 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
+    serverActions: true,  },
     appDir: true,
+  images: {
+    domains: ['localhost', 'your-deployment-url.vercel.app'], // Add your deployment URL here
   },
   async rewrites() {
     return [
